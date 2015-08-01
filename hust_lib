@@ -1,0 +1,55 @@
+#! /bin/python
+import re
+import urllib
+import urllib.request
+import urllib.parse
+import string
+
+url = 'http://ftp.lib.hust.edu.cn'
+print("please input keywords:")
+book = input('')
+values = {}
+values['SEARCH'] = str(book)
+data = urllib.parse.urlencode(values)
+full = url+'/search*chx/X?'+str(data)
+newurl = full.replace(" ","")
+
+def pachong(a):
+	html = urllib.request.urlopen(a).read()
+	html = html.decode('UTF-8')
+	values = re.findall(r'<span class="briefcitTitle">\s*<a href="\/search\*chx\?\/.*\s*</span>',html)
+	details = re.findall(r'<br />\s*<span class="briefcitDetail">\s*.*<br />\s*<br />',html)
+	summarys = re.findall(r'<span class="briefcitDetail">\s*.*<br />\s*&nbsp;<.* >|<span class="briefcitDetail">\s*.*<br />\s*<a href=".* >',html)
+
+	for i in range(len(values)):
+		names = re.findall(r'">\S.*\s[: \/ =]|">\S.*\sb',values[i])
+		writers = re.findall(r'\s[: \/ =]\s.*</a>|\sby\s.*</a>',values[i])
+		publications = re.findall(r'.*<br />\s*<br .>',details[i])
+		summary = re.findall(r'.*<br />',summarys[i])
+		writers[0] = writers[0].replace('/','')
+		writers[0] = writers[0].replace('=','')
+		writers[0] = writers[0].replace(':','')
+		writers[0] = writers[0].replace('by','')
+		writers[0] = writers[0].replace('<a>','')
+		writer = writers[0].replace(' ','')
+		publications[0] = publications[0].replace('<br />','')
+		publications[0] = publications[0].rstrip()
+		summary[0] = summary[0].replace('<br />','')
+
+		print(names[0][2:-2])
+		print(writer)
+		print(publications[0])
+		if summary[0] == '':
+			print("there is no summary for this book.")
+		else:
+			print(summary[0])
+		print()
+
+	nextpage = re.findall(r'<a href="/search\*chx\?\/X.*">后一页</a>',html)
+	if nextpage:
+		nextpage = re.findall(r'/search.*"',nextpage[0])
+		nextpage = nextpage[0].replace('"','')
+		newurl = url + nextpage
+		pachong(newurl)
+
+pachong(newurl)
